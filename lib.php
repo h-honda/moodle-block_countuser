@@ -29,7 +29,7 @@ class countuser_lib{
 	function make_roule_count_table($courseid = 1){
 		global $CFG,$DB;
 		$sql = <<< SQL
-SELECT rl.id,rl.name,rl.description,count(ra.roleid) as num FROM {$CFG->prefix}role_assignments AS ra
+SELECT rl.id,rl.name,rl.description,count(ra.roleid) as num,rl.id as roleid FROM {$CFG->prefix}role_assignments AS ra
 INNER JOIN {$CFG->prefix}context AS CT ON  CT.id = ra.contextid AND CT.contextlevel = 50
 AND CT.instanceid = ?
 RIGHT OUTER JOIN {$CFG->prefix}role AS rl ON ra.roleid = rl.id
@@ -41,9 +41,26 @@ SQL;
 		$table = new html_table();
 		$table->head = array(get_string('roles'), get_string('description'), get_string('user'));
 		foreach ($ret as $tmp){
-			$table->data[] = array($tmp->name,$tmp->description,$tmp->num);
+			$enroleid = $this->get_enroleid($courseid);
+			$url = html_writer::link(new moodle_url('/enrol/manual/manage.php',array('enrolid'=>$enroleid,'roleid'=>$tmp->roleid)),$tmp->name);
+			$table->data[] = array($url,$tmp->description,$tmp->num);
 		}
 		echo html_writer::table($table);
 
 	}
+
+	//roleidを取得
+	private function get_enroleid($courseid = 1){
+		global $DB;
+
+		$enroleid = -1;
+		if($courseid == 1) return $enroleid;
+
+		$ret = $DB->get_record('enrol',array('enrol'=>'manual','courseid'=>$courseid),'id');
+		if($ret !== false){
+			$enroleid = $ret->id;
+		}
+		return $enroleid;
+	}
+
 }
